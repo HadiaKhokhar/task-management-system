@@ -31,20 +31,41 @@ function TaskForm({ task, onClose }) {
     assignedTo: ''
   };
   
-  const handleSubmit = async (values, { setSubmitting }) => {
-    try {
-      if (task) {
-        await updateTask(task._id, values);
-      } else {
-        await createTask(values);
-      }
-      onClose();
-    } catch (error) {
-      console.error('Error submitting task:', error);
-    } finally {
-      setSubmitting(false);
+// Update the form submission logic
+const handleSubmit = async (values, { setSubmitting, setErrors }) => {
+  try {
+    // Log the values being submitted
+    console.log('Submitting task values:', values);
+    
+    // Format the data properly
+    const taskData = {
+      ...values,
+      // Convert empty strings to null/undefined
+      description: values.description || undefined,
+      assignedTo: values.assignedTo || undefined,
+      dueDate: values.dueDate || undefined
+    };
+    
+    if (task) {
+      await updateTask(task._id, taskData);
+    } else {
+      await createTask(taskData);
     }
-  };
+    onClose();
+  } catch (error) {
+    console.error('Error submitting task:', error);
+    // If there are validation errors, set them on the form
+    if (error.response?.data?.details) {
+      const serverErrors = {};
+      error.response.data.details.forEach(detail => {
+        serverErrors[detail.field] = detail.message;
+      });
+      setErrors(serverErrors);
+    }
+  } finally {
+    setSubmitting(false);
+  }
+};
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
